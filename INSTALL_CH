@@ -3,7 +3,7 @@
 
 本项目使用 CMake（参见 www.cmake.org）。请确保 cmake 已正确安装。
 
-您可能需要使用 conan.io (https://conan.io/) 来构建依赖项（OpenSSL、Qt5）。这一步是可选的：你可以自己通过 conan（建议在 Windows 环境下使用）或使用软件包管理器（如 apt 或 yum）构建依赖项。
+您可能需要使用 conan.io (https://conan.io/) 来构建依赖项（OpenSSL、Qt）。这一步是可选的：你可以自己通过 conan（建议在 Windows 环境下使用）或使用软件包管理器（如 apt 或 yum）构建依赖项。
 要自行构建依赖项，必须先添加一个 conan 软件源：
 
 conan remote add tereius https://conan.privatehive.de/artifactory/api/conan/public-conan

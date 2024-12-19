@@ -3,7 +3,7 @@ How to build and install libONVIF binaries
 
 This projects uses CMake (see www.cmake.org). Make sure that cmake is properly installed.
 
-You may want to use conan.io (https://conan.io/) to build the dependencies (OpenSSL, Qt5). This step is optional: You can build the dependencies via conan yourself (recommended for Windows) or obtain them using a package manager (like apt or yum).
+You may want to use conan.io (https://conan.io/) to build the dependencies (OpenSSL, Qt). This step is optional: You can build the dependencies via conan yourself (recommended for Windows) or obtain them using a package manager (like apt or yum).
 To build the dependencies yourself you have to add one conan repositories first:
 
     conan remote add tereius https://conan.privatehive.de/artifactory/api/conan/public-conan

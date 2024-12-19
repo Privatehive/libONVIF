@@ -1,0 +1,42 @@
+name: "Create Conan Package"
+on: push
+
+jobs:
+  build_linux:
+    name: "Linux"
+    uses: Privatehive/conan-workflows/.github/workflows/createPackage.yml@master
+    with:
+      image: "ghcr.io/privatehive/conan-ubuntu:latest"
+      machine_type: c2d-standard-8
+      conan_remotes: https://conan.privatehive.de/artifactory/api/conan/public-conan
+      conan_options: "libONVIF/*openssl:=True"
+
+  build_windows:
+    name: "Windows"
+    uses: Privatehive/conan-workflows/.github/workflows/createPackage.yml@master
+    with:
+      image: "ghcr.io/privatehive/conan-wine:latest"
+      machine_type: c2d-standard-8
+      conan_host_profile: "windowsMinGW"
+      conan_remotes: https://conan.privatehive.de/artifactory/api/conan/public-conan
+      conan_options: "libONVIF/*openssl:=False"
+
+  build_android:
+    name: "Android"
+    uses: Privatehive/conan-workflows/.github/workflows/createPackage.yml@master
+    with:
+      image: "ghcr.io/privatehive/conan-ubuntu:latest"
+      machine_type: c2d-standard-8
+      conan_host_profile: "androidArmv8"
+      conan_remotes: https://conan.privatehive.de/artifactory/api/conan/public-conan
+      conan_options: "libONVIF/*openssl:=True"
+
+  upload_recipe:
+    name: "Finalize"
+    uses: Privatehive/conan-workflows/.github/workflows/uploadRecipe.yml@master
+    needs: [ build_linux, build_windows, build_android ]
+    if: ${{ success() }}
+    secrets: inherit
+    with:
+      publish_property: ${{ github.ref == 'refs/heads/master' }}
+      conan_upload_remote: https://conan.privatehive.de/artifactory/api/conan/public-conan

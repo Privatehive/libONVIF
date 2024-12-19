@@ -1,12 +1,25 @@
 # libONVIF
 
+[![Conan Remote Recipe](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.github.com%2Frepos%2FPrivatehive%2FlibONVIF%2Fproperties%2Fvalues&query=%24%5B0%5D.value&style=flat&logo=conan&label=conan&color=%232980b9)](https://conan.privatehive.de/ui/repos/tree/General/public-conan/de.privatehive/libonvif)
+
 ### Yet another ONVIF library
+
+---
+
+| os        | arch     | CI Status                                                                                                                                                                                                                                                 |
+|-----------|----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `Linux`   | `x86_64` | [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/Privatehive/libONVIF/main.yml?branch=master&style=flat&logo=github&label=create+package)](https://github.com/Privatehive/libONVIF/actions?query=branch%3Amaster) |
+| `Windows` | `x86_64` | [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/Privatehive/libONVIF/main.yml?branch=master&style=flat&logo=github&label=create+package)](https://github.com/Privatehive/libONVIF/actions?query=branch%3Amaster) |
+| `Android` | `armv8`  | [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/Privatehive/libONVIF/main.yml?branch=master&style=flat&logo=github&label=create+package)](https://github.com/Privatehive/libONVIF/actions?query=branch%3Amaster) |
 
 What does ONVIF stand for:
 
-> ONVIF (Open Network Video Interface Forum) is a global and open industry forum with the goal of facilitating the development and use of a global open standard for the interface of physical IP-based security products – or, in other words, to create a standard for how IP products within video surveillance and other physical security areas can communicate with each other. [Wikipedia](https://en.wikipedia.org/wiki/ONVIF)
+> ONVIF (Open Network Video Interface Forum) is a global and open industry forum with the goal of facilitating the
+> development and use of a global open standard for the interface of physical IP-based security products – or, in other
+> words, to create a standard for how IP products within video surveillance and other physical security areas can
+> communicate with each other. [Wikipedia](https://en.wikipedia.org/wiki/ONVIF)
 
-The idea behind this library is to hide some complexity of gsoap and to provide 'high level' classes including QT5
+The idea behind this library is to hide some complexity of gsoap and to provide 'high level' classes including QT
 goodness. Currently there are eleven client side service methods implemented:
 
 - ONVIF analytics http://www.onvif.org/ver20/analytics/wsdl
