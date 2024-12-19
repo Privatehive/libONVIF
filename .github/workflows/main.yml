@@ -9,7 +9,7 @@ jobs:
       image: "ghcr.io/privatehive/conan-ubuntu:latest"
       machine_type: c2d-standard-8
       conan_remotes: https://conan.privatehive.de/artifactory/api/conan/public-conan
-      conan_options: "libONVIF/*openssl:=True"
+      conan_options: "libONVIF/*:openssl=True"
 
   build_windows:
     name: "Windows"
@@ -19,7 +19,7 @@ jobs:
       machine_type: c2d-standard-8
       conan_host_profile: "windowsMinGW"
       conan_remotes: https://conan.privatehive.de/artifactory/api/conan/public-conan
-      conan_options: "libONVIF/*openssl:=False"
+      conan_options: "libONVIF/*:openssl=False"
 
   build_android:
     name: "Android"
@@ -29,7 +29,7 @@ jobs:
       machine_type: c2d-standard-8
       conan_host_profile: "androidArmv8"
       conan_remotes: https://conan.privatehive.de/artifactory/api/conan/public-conan
-      conan_options: "libONVIF/*openssl:=True"
+      conan_options: "libONVIF/*:openssl=True"
 
   upload_recipe:
     name: "Finalize"
