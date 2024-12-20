@@ -45,7 +45,7 @@ class LibonvifConan(ConanFile):
 
     def requirements(self):
         if self.options.openssl:
-            self.requires("openssl/3.3.2")
+            self.requires("openssl/3.0.15@%s/stable" % self.user)
 
     def configure(self):
         if self.options.openssl:
