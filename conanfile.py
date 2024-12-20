@@ -27,7 +27,7 @@ class LibonvifConan(ConanFile):
     url = jsonInfo["repository"]
     # ---Requirements---
     requires = ["qt/[>=6.5.0]@%s/stable" % user]
-    tool_requires = ["cmake/[>=3.23.5]", "ninja/[>=1.11.1]", "qtappbase/1.1.0@%s/stable" % user]
+    tool_requires = ["cmake/[>=3.23.5]", "ninja/[>=1.11.1]", "qtappbase/[>=1.1.0]@%s/stable" % user]
     # ---Sources---
     exports = ["info.json", "LICENSE"]
     exports_sources = ["info.json", "src/*", "doc/*", "CMake/*", "CMakeLists.txt"]
@@ -45,7 +45,7 @@ class LibonvifConan(ConanFile):
 
     def requirements(self):
         if self.options.openssl:
-            self.requires("openssl/3.0.15@%s/stable" % self.user)
+            self.requires("openssl/[>=3.0.15]@%s/stable" % self.user)
 
     def configure(self):
         if self.options.openssl:
