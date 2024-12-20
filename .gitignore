@@ -1,3 +1,6 @@
+CMakeUserPresets.json
+build-*
+.idea
 # Created by https://www.toptal.com/developers/gitignore/api/vscode,clion,conan,qt
 # Edit at https://www.toptal.com/developers/gitignore?templates=vscode,clion,conan,qt
 
