@@ -2,39 +2,68 @@ name: "Create Conan Package"
 on: push
 
 jobs:
-  build_linux:
+  build_linux_x86_64:
     name: "Linux"
     uses: Privatehive/conan-workflows/.github/workflows/createPackage.yml@master
     with:
-      image: "ghcr.io/privatehive/conan-ubuntu:latest"
-      machine_type: c2d-standard-8
+      image: "ubuntu-20.04"
       conan_remotes: https://conan.privatehive.de/artifactory/api/conan/public-conan
-      conan_options: "libONVIF/*:openssl=True"
 
-  build_windows:
+  build_windows_x86_64:
     name: "Windows"
     uses: Privatehive/conan-workflows/.github/workflows/createPackage.yml@master
     with:
-      image: "ghcr.io/privatehive/conan-wine:latest"
-      machine_type: c2d-standard-8
+      image: "windows-2022"
       conan_host_profile: "windowsMinGW"
       conan_remotes: https://conan.privatehive.de/artifactory/api/conan/public-conan
-      conan_options: "libONVIF/*:openssl=False"
 
-  build_android:
-    name: "Android"
+  build_macos_armv8:
+    name: "Macos"
     uses: Privatehive/conan-workflows/.github/workflows/createPackage.yml@master
     with:
-      image: "ghcr.io/privatehive/conan-ubuntu:latest"
+      image: "macos-14"
+      conan_remotes: https://conan.privatehive.de/artifactory/api/conan/public-conan
+
+  build_android_x86:
+    name: "Android"
+    uses: Privatehive/conan-workflows/.github/workflows/createPackageGcpRunner.yml@master
+    with:
+      docker_image: "ghcr.io/privatehive/conan-ubuntu:latest"
+      machine_type: c2d-standard-8
+      conan_host_profile: "androidx86"
+      conan_remotes: https://conan.privatehive.de/artifactory/api/conan/public-conan
+
+  build_android_x86_64:
+    name: "Android"
+    uses: Privatehive/conan-workflows/.github/workflows/createPackageGcpRunner.yml@master
+    with:
+      docker_image: "ghcr.io/privatehive/conan-ubuntu:latest"
+      machine_type: c2d-standard-8
+      conan_host_profile: "androidx86_64"
+      conan_remotes: https://conan.privatehive.de/artifactory/api/conan/public-conan
+
+  build_android_armv7:
+    name: "Android"
+    uses: Privatehive/conan-workflows/.github/workflows/createPackageGcpRunner.yml@master
+    with:
+      docker_image: "ghcr.io/privatehive/conan-ubuntu:latest"
+      machine_type: c2d-standard-8
+      conan_host_profile: "androidArmv7"
+      conan_remotes: https://conan.privatehive.de/artifactory/api/conan/public-conan
+
+  build_android_armv8:
+    name: "Android"
+    uses: Privatehive/conan-workflows/.github/workflows/createPackageGcpRunner.yml@master
+    with:
+      docker_image: "ghcr.io/privatehive/conan-ubuntu:latest"
       machine_type: c2d-standard-8
       conan_host_profile: "androidArmv8"
       conan_remotes: https://conan.privatehive.de/artifactory/api/conan/public-conan
-      conan_options: "libONVIF/*:openssl=True"
 
   upload_recipe:
     name: "Finalize"
     uses: Privatehive/conan-workflows/.github/workflows/uploadRecipe.yml@master
-    needs: [ build_linux, build_windows, build_android ]
+    needs: [ build_linux_x86_64, build_windows_x86_64, build_macos_armv8, build_android_x86, build_android_x86_64, build_android_armv7, build_android_armv8 ]
     if: ${{ success() }}
     secrets: inherit
     with:
