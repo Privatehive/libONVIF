@@ -1,8 +1,8 @@
 {
   "version": {
     "major": 3,
-    "minor": 1,
-    "patch": 0,
+    "minor": 0,
+    "patch": 1,
     "snapshot": true
   },
   "projectName": "libONVIF",

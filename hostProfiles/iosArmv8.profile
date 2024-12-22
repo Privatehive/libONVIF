@@ -1,0 +1,15 @@
+[settings]
+os=iOS
+os.version=18.2
+os.sdk=iphoneos
+os.sdk_version=18.2
+arch=armv8
+compiler=apple-clang
+compiler.cppstd=gnu17
+compiler.libcxx=libc++
+compiler.version=16
+build_type=Release
+[options]
+shared=False
+[tool_requires]
+cmake/3.23.5
