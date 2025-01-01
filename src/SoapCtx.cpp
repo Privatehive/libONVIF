@@ -17,16 +17,16 @@
 #ifdef WITH_OPENSSL
 #include "httpda.h"
 #endif // WITH_OPENSSL
+#include "info.h"
 #include "namespaces.nsmap"
 #include "wsaapi.h"
-#include "info.h"
 #include <QDebug>
 #include <QLatin1String>
-#include <QSysInfo>
+#include <QMutexLocker>
 #include <QPointer>
 #include <QString>
-#include <QMutexLocker>
-#if(QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+#include <QSysInfo>
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
 #define HAS_QT_RECURSIVEMUTEX
 #include <QRecursiveMutex>
 #else
@@ -79,6 +79,17 @@ size_t frecv(struct soap *soap, char *s, size_t n) {
 	}
 	return length;
 }
+
+// Somehow "SSL_CTX_new(TLS_method())" will return null (internally signaling SSL_R_LIBRARY_HAS_NO_CIPHERS) if Qt initializes openssl
+// (SSL_library_init()) first. Maybe Qt disables all ciphers by default? This initializer will make sure that we initialize openssl first.
+// This also ensures that openssl is initialized by the main thread without creating a race condition with other threads.
+#ifdef WITH_OPENSSL
+class SoapCtxSslInitializer {
+ public:
+	SoapCtxSslInitializer() { soap_ssl_init(); }
+};
+static SoapCtxSslInitializer soapSslInitilizer;
+#endif
 
 struct CtxPrivate {
 	explicit CtxPrivate(SoapCtx *pQ) :
@@ -284,9 +295,9 @@ void SoapCtx::InitCtx() {
 
 	int (*pFsend)(struct soap *, const char *, size_t);
 	pFsend = &fsend;
-	size_t (*pFrecv)(struct soap * soap, char *s, size_t n);
+	size_t (*pFrecv)(struct soap *soap, char *s, size_t n);
 	pFrecv = &frecv;
-	int (*pFposthdr)(struct soap * soap, const char *s, const char *v);
+	int (*pFposthdr)(struct soap *soap, const char *s, const char *v);
 	pFposthdr = &fposthdr;
 	auto ud = new arbData();
 	ud->frecv = mpD->mpSoap->frecv;
