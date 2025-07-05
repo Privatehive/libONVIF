@@ -7,7 +7,7 @@
 gSOAP XML Web services tools
 Copyright (C) 2000-2016, Robert van Engelen, Genivia Inc., All Rights Reserved.
 This part of the software is released under one of the following licenses:
-GPL, the gSOAP public license, or Genivia's license for commercial use.
+GPL or the gSOAP public license.
 --------------------------------------------------------------------------------
 gSOAP public license.
 
@@ -59,7 +59,7 @@ extern "C" {
 #endif
 
 /** plugin identification for plugin registry */
-#define HTTP_DA_ID "SOAP-HTTP-DA/2.0"
+#define HTTP_DA_ID "SOAP-HTTP-DA/2.1"
 
 /** plugin identification for plugin registry */
 extern const char http_da_id[];
@@ -67,9 +67,9 @@ extern const char http_da_id[];
 /** Plugin registry function, use with soap_register_plugin_arg(soap, http_da, ...) */
 SOAP_FMAC1 int SOAP_FMAC2 http_da(struct soap *soap, struct soap_plugin *p, void *arg);
 
-/** Use MD5 for server-side configuration with soap_register_plugin_arg() */
+/** Use MD5 for server-side configuration with soap_register_plugin_arg() not recommended */
 SOAP_FMAC1 void * SOAP_FMAC2 http_da_md5();
-/** Use MD5-sess for server-side configuration with soap_register_plugin_arg() */
+/** Use MD5-sess for server-side configuration with soap_register_plugin_arg() not recommended */
 SOAP_FMAC1 void * SOAP_FMAC2 http_da_md5_sess();
 /** Use SHA-256 for server-side configuration with soap_register_plugin_arg()*/
 SOAP_FMAC1 void * SOAP_FMAC2 http_da_sha256();
@@ -82,6 +82,10 @@ SOAP_FMAC1 void * SOAP_FMAC2 http_da_sha512_256_sess();
 
 SOAP_FMAC1 int SOAP_FMAC2 http_da_verify_post(struct soap *soap, const char *passwd);
 SOAP_FMAC1 int SOAP_FMAC2 http_da_verify_get(struct soap *soap, const char *passwd);
+SOAP_FMAC1 int SOAP_FMAC2 http_da_verify_put(struct soap *soap, const char *passwd);
+SOAP_FMAC1 int SOAP_FMAC2 http_da_verify_patch(struct soap *soap, const char *passwd);
+SOAP_FMAC1 int SOAP_FMAC2 http_da_verify_del(struct soap *soap, const char *passwd);
+SOAP_FMAC1 int SOAP_FMAC2 http_da_verify_method(struct soap *soap, const char *method, const char *passwd);
 
 /** HTTP digest authentication session times out after ten minutes */
 #define HTTP_DA_SESSION_TIMEOUT (600) 

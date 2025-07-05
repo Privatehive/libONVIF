@@ -8,7 +8,7 @@
 gSOAP XML Web services tools
 Copyright (C) 2000-2015, Robert van Engelen, Genivia Inc., All Rights Reserved.
 This part of the software is released under one of the following licenses:
-GPL, the gSOAP public license, or Genivia's license for commercial use.
+GPL or the gSOAP public license.
 --------------------------------------------------------------------------------
 gSOAP public license.
 
@@ -253,6 +253,7 @@ SOAP_FMAC1 int SOAP_FMAC2 soap_wsse_fault(struct soap *soap, enum wsse__Faultcod
 SOAP_FMAC1 int SOAP_FMAC2 soap_wsse(struct soap *soap, struct soap_plugin *p, void *arg);
 
 SOAP_FMAC1 void SOAP_FMAC2 soap_wsse_rand_nonce(char *nonce, size_t noncelen);
+
 SOAP_FMAC1 int SOAP_FMAC2 soap_pmd5(struct soap *soap, const char *hmac_key, size_t hmac_key_len, const char *secret, size_t secretlen, char *pmd5, size_t pmd5len);
 SOAP_FMAC1 int SOAP_FMAC2 soap_psha1(struct soap *soap, const char *hmac_key, size_t hmac_key_len, const char *secret, size_t secretlen, char *psha1, size_t psha1len);
 SOAP_FMAC1 int SOAP_FMAC2 soap_psha256(struct soap *soap, const char *hmac_key, size_t hmac_key_len, const char *secret, size_t secretlen, char *psha256, size_t psha256len);
@@ -296,8 +297,33 @@ SOAP_FMAC1 int SOAP_FMAC2 soap_wsse_decrypt_end(struct soap *soap);
 }
 #endif
 
+/**
+@fn void soap_default_xsd__anyType(struct soap *soap, struct soap_dom_element *node)
+@brief Initializes a DOM element node.
+@param soap context
+@param node pointer to DOM element node.
+*/
 SOAP_FMAC1 void SOAP_FMAC2 soap_default_xsd__anyType(struct soap*, struct soap_dom_element *node);
+
+/**
+@fn int soap_out_xsd__anyType(struct soap *soap, const char *tag, int id, const struct soap_dom_element *node, const char *type)
+@brief Output a DOM element node.
+@param soap context
+@param[out] tag XML element tag name
+@param[out] id integer ref id value or zero if none
+@param[out] node pointer to DOM element node to send
+@param[out] type xsi:type or NULL
+*/
 SOAP_FMAC1 int SOAP_FMAC2 soap_out_xsd__anyType(struct soap *soap, const char *tag, int id, const struct soap_dom_element *node, const char *type);
+
+/**
+@fn struct soap_dom_element *soap_in_xsd__anyType(struct soap *soap, const char *tag, struct soap_dom_element *node, const char *type)
+@brief Input a DOM element node.
+@param soap context
+@param[out] tag XML element tag name to verify or NULL
+@param[in] node pointer to DOM element node to parse
+@param[out] type xsi:type to verify or NULL
+*/
 SOAP_FMAC1 struct soap_dom_element * SOAP_FMAC2 soap_in_xsd__anyType(struct soap *soap, const char *tag, struct soap_dom_element *node, const char *type);
 
 #endif

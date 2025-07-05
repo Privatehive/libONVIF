@@ -6,7 +6,7 @@
 gSOAP XML Web services tools
 Copyright (C) 2000-2015, Robert van Engelen, Genivia Inc., All Rights Reserved.
 This part of the software is released under one of the following licenses:
-GPL, the gSOAP public license, or Genivia's license for commercial use.
+GPL or the gSOAP public license.
 --------------------------------------------------------------------------------
 gSOAP public license.
 
@@ -50,7 +50,7 @@ A commercial use license is available from Genivia, Inc., contact@genivia.com
 
 @mainpage
 
-- @ref wsse documents the wsse lite API for WS-Security 1.0 support.
+- @ref wsse documents the wsse lite API for WS-Security 1.0/1.1 support.
 
 */
 
@@ -82,6 +82,7 @@ The wsse lite API is located in:
 
 You will also need:
 
+- `gsoap/custom/struct_timeval.c` compile and link this file (C and C++).
 - compile all sources with `-DWITH_OPENSSL` to enable HTTPS.
 - if you have zlib installed, compile all sources also with `-DWITH_GZIP`.
 - link with `-lssl -lcrypto -lz -gsoapssl++` (or `-lgsoapssl` for C, or compile `stdsoap2.cpp` for C++ and `stdsoap2.c` for C).

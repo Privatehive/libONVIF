@@ -6,16 +6,12 @@ public:
 	static bool isStringDerived(const QString &rQname) {
 		if(rQname.isEmpty()) return false;
 		else if(rQname == "_xml:lang") return true;
-		else if(rQname == "tds:EAPMethodTypes") return true;
-		else if(rQname == "tr2:EncodingTypes") return true;
-		else if(rQname == "trc:EncodingTypes") return true;
-		else if(rQname == "trt:EncodingTypes") return true;
-		else if(rQname == "tt:AudioClassType") return true;
 		else if(rQname == "tt:AuxiliaryData") return true;
 		else if(rQname == "tt:Description") return true;
+		else if(rQname == "tt:Direction") return true;
 		else if(rQname == "tt:Dot11PSKPassphrase") return true;
-		else if(rQname == "tt:FloatAttrList") return true;
-		else if(rQname == "tt:IntAttrList") return true;
+		else if(rQname == "tt:FloatList") return true;
+		else if(rQname == "tt:IntList") return true;
 		else if(rQname == "tt:Name") return true;
 		else if(rQname == "tt:RecordingJobMode") return true;
 		else if(rQname == "tt:RecordingJobState") return true;

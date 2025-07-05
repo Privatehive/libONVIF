@@ -33,9 +33,10 @@ class LibonvifConan(ConanFile):
     exports_sources = ["info.json", "src/*", "doc/*", "CMake/*", "CMakeLists.txt"]
     # ---Binary model---
     settings = "os", "compiler", "build_type", "arch"
-    options = {"shared": [True, False], "openssl": [True, False]}
+    options = {"shared": [True, False], "openssl": [True, False], "codesynthesis": [True, False]}
     default_options = {"shared": True,
                        "openssl": True,
+                       "codesynthesis": False,
                        "qt/*:qtbase": True
                        }
     # ---Build---
@@ -55,6 +56,7 @@ class LibonvifConan(ConanFile):
         ms = VirtualBuildEnv(self)
         tc = CMakeToolchain(self, generator="Ninja")
         tc.variables["ENABLE_SSL"] = self.options.openssl
+        tc.variables["ENABLE_CODESYNTHESIS"] = self.options.codesynthesis
         tc.generate()
         ms.generate()
 

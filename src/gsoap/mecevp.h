@@ -4,9 +4,9 @@
         gSOAP interface for streaming message encryption and decryption
 
 gSOAP XML Web services tools
-Copyright (C) 2000-2015, Robert van Engelen, Genivia Inc., All Rights Reserved.
+Copyright (C) 2000-2023, Robert van Engelen, Genivia Inc., All Rights Reserved.
 This part of the software is released under one of the following licenses:
-GPL, the gSOAP public license, or Genivia's license for commercial use.
+GPL or the gSOAP public license.
 --------------------------------------------------------------------------------
 gSOAP public license.
 
@@ -19,7 +19,7 @@ WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
 for the specific language governing rights and limitations under the License.
 
 The Initial Developer of the Original Code is Robert A. van Engelen.
-Copyright (C) 2000-2015, Robert van Engelen, Genivia, Inc., All Rights Reserved.
+Copyright (C) 2000-2023, Robert van Engelen, Genivia, Inc., All Rights Reserved.
 --------------------------------------------------------------------------------
 GPL license.
 
@@ -53,6 +53,7 @@ A commercial use license is available from Genivia, Inc., contact@genivia.com
 
 #include <openssl/evp.h>
 #include <openssl/ssl.h>
+#include <openssl/err.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -199,6 +200,7 @@ struct soap_mec_data {
   const EVP_PKEY *pkey;         /**< private key for OpenInit */
   unsigned char ekey[EVP_MAX_KEY_LENGTH];/**< ephemeral key */
   const unsigned char *key;     /**< secret key */
+  unsigned char iv[EVP_MAX_IV_LENGTH];/**< IV buffer */
   int keylen;                   /**< secret key length */
   char *buf;                    /**< iv and stream buffer */
   size_t bufidx;                /**< current buffer index */

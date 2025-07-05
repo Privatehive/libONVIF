@@ -7,7 +7,7 @@
 gSOAP XML Web services tools
 Copyright (C) 2000-2016, Robert van Engelen, Genivia Inc., All Rights Reserved.
 This part of the software is released under one of the following licenses:
-GPL, the gSOAP public license, or Genivia's license for commercial use.
+GPL or the gSOAP public license.
 --------------------------------------------------------------------------------
 gSOAP public license.
 
@@ -395,13 +395,31 @@ compared, not passwords:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The `http_da_verify_post()` function checks the HTTP POST credentials by
-computing and comparing a digest of the password.  To verify an HTTP GET
-operation, use `http_da_verify_get()` instead.
+computing and comparing a digest of the password.  The HTTP POST method is used
+for two-way SOAP/XML communications with request and response messages.
+One-way SOAP/XML messaging may use HTTP POST or HTTP GET.  To verify an HTTP
+GET operation, use `http_da_verify_get()` instead, for example in the HTTP GET
+handler implemented with the HTTP GET plugin.  Likewise, use `http_da_verify_put()`
+for HTTP PUT, `http_da_verify_patch()` for HTTP PATCH, and `http_da_verify_del()`
+for HTTP DELETE.  To verify other HTTP methods, use the `http_da_verify_method()`
+function with the method as a string argument, for example:
 
-RFC7616 recommends SHA2 over MD5.  The MD5 algorithm is not allowed in FIPS and
-SHA-256 or SHA-512-256 are mandatory.  The upgrade plugin uses SHA-256 as the
-default algorithm and reverts to MD5 only if required by a client that does not
-support RFC7616.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+    if (!http_da_verify_method(soap, "HEAD", passwd))
+    {
+      ... // process the request
+    }
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Server-side operations that handle other methods than HTTP POST and GET, such
+as PATCH, PUT, and DELETE should be implemented with the HTTP POST plugin.
+This plugin uses a dispatch table with a handler corresponding to the HTTP
+method to serve.
+
+RFC7616 recommends SHA2 over MD5.  MD5 is not secure.  The MD5 algorithm is not
+allowed in FIPS and SHA-256 or SHA-512-256 are mandatory.  This upgraded HTTP
+digest plugin uses SHA-256 as the default algorithm and reverts to MD5 only if
+required by a client that does not support RFC7616.
 
 The default SHA-256 digest algorithm is enabled automatically.  However, at the
 server side you can also use a plugin registry option to set a different
@@ -422,10 +440,10 @@ where `<option>` is one of:
 
 When non-MD5 option is selected, the server will present that digest algorithm
 together with the MD5 authentication algorithm as challenge to the client.  If
-the client is upgraded to RFC7616 it selects the newer protcol.  If the client
+the client is upgraded to RFC7616 it selects the newer protocol.  If the client
 is not upgraded it will select the older MD5-based protocol.
 
-To revert to RFC2617 use `http_da_md5()`.
+To revert to RFC2617 use `http_da_md5()` (not recommended).
 
 @section httpda_4 Server example
 
@@ -509,7 +527,6 @@ static int http_da_preparesend(struct soap *soap, const char *buf, size_t len);
 static int http_da_preparerecv(struct soap *soap, const char *buf, size_t len);
 static int http_da_preparefinalrecv(struct soap *soap);
 
-static int http_da_verify_method(struct soap *soap, const char *method, const char *passwd);
 static void http_da_session_start(const char *realm, const char *nonce, const char *opaque);
 static int http_da_session_update(const char *realm, const char *nonce, const char *opaque, const char *cnonce, const char *ncount);
 static void http_da_session_cleanup();
@@ -751,17 +768,31 @@ http_da_post_header(struct soap *soap, const char *key, const char *val)
 	qop = NULL;
       }
 
-      if (soap->status == SOAP_GET)
+      switch (soap->status)
       {
-	method = "GET";
-      }
-      else if (soap->status == SOAP_CONNECT)
-      {
-	method = "CONNECT";
-      }
-      else
-      {
-	method = "POST";
+        case SOAP_GET:
+          method = "GET";
+          break;
+        case SOAP_PUT:
+          method = "PUT";
+          break;
+        case SOAP_PATCH:
+          method = "PATCH";
+          break;
+        case SOAP_DEL:
+          method = "DELETE";
+          break;
+        case SOAP_HEAD:
+          method = "HEAD";
+          break;
+        case SOAP_OPTIONS:
+          method = "OPTIONS";
+          break;
+        case SOAP_CONNECT:
+          method = "CONNECT";
+          break;
+        default:
+          method = "POST";
       }
 
       (SOAP_SNPRINTF(ncount, sizeof(ncount), 8), "%8.8lx", data->nc++);
@@ -826,9 +857,10 @@ http_da_parse(struct soap *soap)
   if (!data)
     return SOAP_PLUGIN_ERROR;
 
+  data->alg = NULL;
   data->qop = NULL;
 
-  /* HTTP GET w/o body with qop=auth-int still requires a digest */
+  /* HTTP GET w/o body with qop=auth-int still requires a dummy digest */
   if (soap_smd_init(soap, &data->smd_data, SOAP_SMD_DGST_MD5, NULL, 0)
    || soap_smd_final(soap, &data->smd_data, data->digest, NULL))
     return soap->error;
@@ -887,21 +919,24 @@ http_da_parse_header(struct soap *soap, const char *key, const char *val)
   if ((!soap_tag_cmp(key, "WWW-Authenticate") || !soap_tag_cmp(key, "Proxy-Authenticate")) && !soap_tag_cmp(val, "Digest *"))
   {
     const char *authrealm = soap_http_header_attribute(soap, val + 7, "realm");
-    if (authrealm && (!soap->authrealm || strcmp(authrealm, soap->authrealm)))
+    if (authrealm)
     {
       const char *alg;
       soap->authrealm = soap_strdup(soap, authrealm);
       alg = soap_http_header_attribute(soap, val + 7, "algorithm");
       if (!alg || soap_tag_cmp(alg, "SHA-512-256*"))
       {
-        /* got the first authenticate header for this realm that we can accept */
-        data->alg = soap_strdup(soap, alg);
-        data->nonce = soap_strdup(soap, soap_http_header_attribute(soap, val + 7, "nonce"));
-        data->opaque = soap_strdup(soap, soap_http_header_attribute(soap, val + 7, "opaque"));
-        data->qop = soap_strdup(soap, soap_http_header_attribute(soap, val + 7, "qop"));
-        data->nc = 1;
-        data->ncount = NULL;
-        data->cnonce = NULL;
+        /* got the first authenticate header for this realm that we can accept or prioritize non-MD5 */
+        if (!data->alg || !soap_tag_cmp(data->alg, "MD5"))
+        {
+          data->alg = soap_strdup(soap, alg);
+          data->nonce = soap_strdup(soap, soap_http_header_attribute(soap, val + 7, "nonce"));
+          data->opaque = soap_strdup(soap, soap_http_header_attribute(soap, val + 7, "opaque"));
+          data->qop = soap_strdup(soap, soap_http_header_attribute(soap, val + 7, "qop"));
+          data->nc = 1;
+          data->ncount = NULL;
+          data->cnonce = NULL;
+        }
       }
       else
       {
@@ -1273,7 +1308,64 @@ http_da_verify_get(struct soap *soap, const char *passwd)
 
 /******************************************************************************/
 
-static int
+/**
+@brief Verifies the password credentials at the server side when used in an HTTP PUT service operation.
+@param soap context
+@param passwd the user password string
+@return SOAP_OK or error when verification failed
+*/
+SOAP_FMAC1
+int
+SOAP_FMAC2
+http_da_verify_put(struct soap *soap, const char *passwd)
+{
+  return http_da_verify_method(soap, "PUT", passwd);
+}
+
+/******************************************************************************/
+
+/**
+@brief Verifies the password credentials at the server side when used in an HTTP PATCH service operation.
+@param soap context
+@param passwd the user password string
+@return SOAP_OK or error when verification failed
+*/
+SOAP_FMAC1
+int
+SOAP_FMAC2
+http_da_verify_patch(struct soap *soap, const char *passwd)
+{
+  return http_da_verify_method(soap, "PATCH", passwd);
+}
+
+/******************************************************************************/
+
+/**
+@brief Verifies the password credentials at the server side when used in an HTTP DELETE service operation.
+@param soap context
+@param passwd the user password string
+@return SOAP_OK or error when verification failed
+*/
+SOAP_FMAC1
+int
+SOAP_FMAC2
+http_da_verify_del(struct soap *soap, const char *passwd)
+{
+  return http_da_verify_method(soap, "DELETE", passwd);
+}
+
+/******************************************************************************/
+
+/**
+@brief Verifies the password credentials at the server side when used in the specified HTTP method.
+@param soap context
+@param method the HTTP method, e.g. "POST", "GET", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"
+@param passwd the user password string
+@return SOAP_OK or error when verification failed
+*/
+SOAP_FMAC1
+int
+SOAP_FMAC2
 http_da_verify_method(struct soap *soap, const char *method, const char *passwd)
 {
   struct http_da_data *data = (struct http_da_data*)soap_lookup_plugin(soap, http_da_id);
@@ -1372,7 +1464,7 @@ http_da_session_update(const char *realm, const char *nonce, const char *opaque,
   MUTEX_LOCK(http_da_session_lock);
 
   for (session = http_da_session; session; session = session->next)
-    if (!strcmp(session->realm, realm) && !strcmp(session->nonce, nonce) && !strcmp(session->opaque, opaque))
+    if (session->realm && session->nonce && session->opaque && !strcmp(session->realm, realm) && !strcmp(session->nonce, nonce) && !strcmp(session->opaque, opaque))
       break;
 
   if (session)

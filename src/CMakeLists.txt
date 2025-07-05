@@ -2,11 +2,11 @@ include(GenerateExportHeader)
 include(CMakePackageConfigHelpers)
 find_package(Qt6 COMPONENTS Core REQUIRED)
 if (ENABLE_CODESYNTHESIS)
-    find_program(Gsoap_wsdl2h_PATH NAMES wsdl2h PATH_SUFFIXES "bin")
-    find_program(Gsoap_soapcpp2_PATH NAMES soapcpp2 PATH_SUFFIXES "bin")
-    find_path(Gsoap_import_DIR NAMES wsdd5.h PATH_SUFFIXES "gsoap/import" "share/gsoap/import" "share/gsoap")
-    find_path(Gsoap_plugin_DIR NAMES wsseapi.h PATH_SUFFIXES "gsoap/plugin" "share/gsoap/plugin" "share/gsoap")
-    find_path(Gsoap_custom_DIR NAMES struct_timeval.h PATH_SUFFIXES "gsoap/custom" "share/gsoap/custom" "share/gsoap")
+    find_program(Gsoap_wsdl2h_PATH NAMES wsdl2h PATH_SUFFIXES "gsoap/bin" "bin" REQUIRED)
+    find_program(Gsoap_soapcpp2_PATH NAMES soapcpp2 PATH_SUFFIXES "gsoap/bin" "bin" REQUIRED)
+    find_path(Gsoap_import_DIR NAMES wsdd5.h PATH_SUFFIXES "gsoap/import" "share/gsoap/import" "gsoap/share/gsoap/import" REQUIRED)
+    find_path(Gsoap_plugin_DIR NAMES wsseapi.h PATH_SUFFIXES "gsoap/plugin" "share/gsoap/plugin" "gsoap/share/gsoap/plugin" REQUIRED)
+    find_path(Gsoap_custom_DIR NAMES struct_timeval.h PATH_SUFFIXES "gsoap/custom" "share/gsoap/custom" "gsoap/share/gsoap/custom" REQUIRED)
     find_file(Gsoap_stdsoap2cpp NAMES stdsoap2.cpp PATH_SUFFIXES "gsoap" REQUIRED)
     find_file(Gsoap_stdsoap2h NAMES stdsoap2.h PATH_SUFFIXES "gsoap" REQUIRED)
     find_file(Gsoap_domcpp NAMES dom.cpp PATH_SUFFIXES "gsoap" REQUIRED)
@@ -76,7 +76,7 @@ if (ENABLE_CODESYNTHESIS)
             COMMAND ${CMAKE_COMMAND} -E copy ${Gsoap_stdsoap2h} ${CMAKE_CURRENT_SOURCE_DIR}/gsoap
             COMMAND ${CMAKE_COMMAND} -E copy ${Gsoap_domcpp} ${CMAKE_CURRENT_SOURCE_DIR}/gsoap
 
-            COMMAND ${Gsoap_wsdl2h_PATH} -c++11 -z7 -d -p -j -t typemap.dat -o generated.h
+            COMMAND ${Gsoap_wsdl2h_PATH} -c++17 -d -p -j -t typemap.dat -o generated.h
             http://www.onvif.org/onvif/ver10/analyticsdevice.wsdl
             http://www.onvif.org/onvif/ver10/replay.wsdl
             http://www.onvif.org/onvif/ver10/search.wsdl
@@ -90,7 +90,7 @@ if (ENABLE_CODESYNTHESIS)
             http://www.onvif.org/onvif/ver10/events/wsdl/event.wsdl
             http://www.onvif.org/onvif/ver10/device/wsdl/devicemgmt.wsdl
             http://www.onvif.org/onvif/ver20/analytics/wsdl/analytics.wsdl
-            COMMAND ${Gsoap_soapcpp2_PATH} -Ed -Ec -c++11 -z4 -a -j -L -x -n -d ${CMAKE_CURRENT_SOURCE_DIR}/generated -I ${GSOAP_DIRS} generated.h
+            COMMAND ${Gsoap_soapcpp2_PATH} -Ed -Ec -c++17 -a -j -L -x -n -d ${CMAKE_CURRENT_SOURCE_DIR}/generated -I ${GSOAP_DIRS} generated.h
             COMMAND $<TARGET_FILE:headerParserTool> generated.h
             COMMAND ${CMAKE_COMMAND} -E copy GsoapResolver.h ${CMAKE_CURRENT_SOURCE_DIR}/generated
             WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/wsdl VERBATIM)

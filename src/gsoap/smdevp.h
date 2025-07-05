@@ -6,7 +6,7 @@
 gSOAP XML Web services tools
 Copyright (C) 2000-2015, Robert van Engelen, Genivia Inc., All Rights Reserved.
 This part of the software is released under one of the following licenses:
-GPL, the gSOAP public license, or Genivia's license for commercial use.
+GPL or the gSOAP public license.
 --------------------------------------------------------------------------------
 gSOAP public license.
 
@@ -54,6 +54,7 @@ A commercial use license is available from Genivia, Inc., contact@genivia.com
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
 #include <openssl/ssl.h>
+#include <openssl/err.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -230,11 +231,15 @@ extern "C" {
 */
 struct soap_smd_data {
   int alg;              /**< The digest or signature algorithm used */
-  void *ctx;            /**< EVP_MD_CTX or HMAC_CTX */
+  void *ctx;            /**< EVP_MD_CTX or EVP_MAC_CTX or HMAC_CTX */
+  const EVP_MD *type;   /**< alg type */
   const void *key;      /**< EVP_PKEY */
   int (*fsend)(struct soap*, const char*, size_t);
   size_t (*frecv)(struct soap*, char*, size_t);
   soap_mode mode;       /**< to preserve soap->mode value */
+#if (OPENSSL_VERSION_NUMBER >= 0x30000000L)
+  EVP_MAC *mac;         /**< OpenSSL v3 EVP_MAC_fetch HMAC */
+#endif
 };
 
 /******************************************************************************\

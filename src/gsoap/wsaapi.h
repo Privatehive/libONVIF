@@ -6,7 +6,7 @@
 gSOAP XML Web services tools
 Copyright (C) 2000-2008, Robert van Engelen, Genivia Inc., All Rights Reserved.
 This part of the software is released under one of the following licenses:
-GPL, the gSOAP public license, or Genivia's license for commercial use.
+GPL or the gSOAP public license.
 --------------------------------------------------------------------------------
 gSOAP public license.
 
@@ -64,7 +64,12 @@ extern "C" {
 #endif
 
 /** Plugin identification for plugin registry */
-#define SOAP_WSA_ID "SOAP-WSA/1.3"
+#define SOAP_WSA_ID "SOAP-WSA/1.5"
+
+/** Plugin registry argument parameter to inherit soap context to connect and send responses to other servers (default) */
+#define SOAP_WSA_INHERIT_TRANSFER NULL
+/** Plugin registry argument parameter to reset soap context transfer callbacks to connect and send responses to other servers */
+#define SOAP_WSA_NEW_TRANSFER ((void*)"")
 
 /** Plugin identification for plugin registry */
 extern const char soap_wsa_id[];
@@ -95,14 +100,41 @@ extern const char *soap_wsa_faultAction;
 @brief plugin data to override callbacks
 */
 struct soap_wsa_data
-{ /** fheader callback is invoked immediately after parsing a SOAP Header */
+{
+  /** fheader callback is invoked immediately after parsing a SOAP Header */
   int (*fheader)(struct soap*);
   /** fseterror callback is used to inspect and change gSOAP error codes */
   void (*fseterror)(struct soap*, const char**, const char**);
   /** fresponse callback is used to change a HTTP response into a HTTP POST */
   int (*fresponse)(struct soap*, int, ULONG64);
-  /** fdisconnect callback is used to accept HTTP 202 */
+  /** fdisconnect callback is used to accept HTTP 200 or 202 */
   int (*fdisconnect)(struct soap*);
+  /** flag to inherit soap context transfer callbacks (default) or start new */
+  void *transfer;
+  /** saved fposthdr transfer callbacks */
+  int (*fposthdr)(struct soap*, const char*, const char*);
+  /** saved fparse transfer callbacks */
+  int (*fparse)(struct soap*);
+  /** saved fparsehdr transfer callbacks */
+  int (*fparsehdr)(struct soap*, const char*, const char*);
+  /** saved fresolve transfer callbacks */
+  int (*fresolve)(struct soap*, const char*, struct in_addr* inaddr);
+  /** saved fconnect transfer callbacks */
+  int (*fconnect)(struct soap*, const char*, const char*, int);
+  /** saved fclosesocket transfer callbacks */
+  int (*fclosesocket)(struct soap*, SOAP_SOCKET);
+  /** saved fshutdownsocket transfer callbacks */
+  int (*fshutdownsocket)(struct soap*, SOAP_SOCKET, int);
+  /** saved fopen transfer callbacks */
+  SOAP_SOCKET (*fopen)(struct soap*, const char*, const char*, int);
+  /** saved fclose transfer callbacks */
+  int (*fclose)(struct soap*);
+  /** saved fsend transfer callbacks */
+  int (*fsend)(struct soap*, const char*, size_t);
+  /** saved frecv transfer callbacks */
+  size_t (*frecv)(struct soap*, char*, size_t);
+  /** saved fpoll transfer callbacks */
+  int (*fpoll)(struct soap*);
 };
 
 SOAP_FMAC1 int SOAP_FMAC2 soap_wsa(struct soap *soap, struct soap_plugin *p, void *arg);

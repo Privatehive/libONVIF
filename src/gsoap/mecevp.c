@@ -4,9 +4,9 @@
         gSOAP interface for streaming message encryption and decryption
 
 gSOAP XML Web services tools
-Copyright (C) 2000-2015, Robert van Engelen, Genivia Inc., All Rights Reserved.
+Copyright (C) 2000-2023, Robert van Engelen, Genivia Inc., All Rights Reserved.
 This part of the software is released under one of the following licenses:
-GPL, the gSOAP public license, or Genivia's license for commercial use.
+GPL or the gSOAP public license.
 --------------------------------------------------------------------------------
 gSOAP public license.
 
@@ -19,7 +19,7 @@ WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
 for the specific language governing rights and limitations under the License.
 
 The Initial Developer of the Original Code is Robert A. van Engelen.
-Copyright (C) 2000-2015, Robert van Engelen, Genivia, Inc., All Rights Reserved.
+Copyright (C) 2000-2023, Robert van Engelen, Genivia, Inc., All Rights Reserved.
 --------------------------------------------------------------------------------
 GPL license.
 
@@ -383,18 +383,33 @@ soap_mec_init(struct soap *soap, struct soap_mec_data *data, int alg, SOAP_MEC_K
     default:
       data->type = NULL;
   }
-  if (alg & SOAP_MEC_ENC)
+  if ((alg & SOAP_MEC_ENC))
   {
     if (!data->type)
-      return soap_mec_check(soap, data, 0, "soap_mec_init() failed: cannot load cipher");
+      return soap_mec_check(soap, data, 0, "soap_mec_init() failed: no cipher");
+#if (OPENSSL_VERSION_NUMBER >= 0x30000000L)
+    if ((alg & SOAP_MEC_ENV))
+    {
+      ok = EVP_SealInit(data->ctx, data->type, &key, keylen, data->iv, &pkey, 1);
+      DBGLOG(TEST, SOAP_MESSAGE(fdebug, "EVP_SealInit ok=%d\n", ok));
+    }
+    else
+    {
+      ok = EVP_EncryptInit_ex(data->ctx, data->type, NULL, NULL, NULL);
+      DBGLOG(TEST, SOAP_MESSAGE(fdebug, "EVP_EncryptInit ok=%d\n", ok));
+    }
+#else
     ok = EVP_EncryptInit_ex(data->ctx, data->type, NULL, NULL, NULL);
     DBGLOG(TEST, SOAP_MESSAGE(fdebug, "EVP_EncryptInit ok=%d\n", ok));
+#endif
   }
-  if (alg & SOAP_MEC_GCM)
+  if ((alg & SOAP_MEC_GCM))
+  {
     EVP_CIPHER_CTX_set_padding(data->ctx, 0);
+  }
   else
   {
-    if (alg & SOAP_MEC_OAEP)
+    if ((alg & SOAP_MEC_OAEP))
       EVP_CIPHER_CTX_set_padding(data->ctx, RSA_PKCS1_OAEP_PADDING);
     else
       EVP_CIPHER_CTX_set_padding(data->ctx, RSA_PKCS1_PADDING);
@@ -402,10 +417,11 @@ soap_mec_init(struct soap *soap, struct soap_mec_data *data, int alg, SOAP_MEC_K
   switch (alg & SOAP_MEC_MASK & ~SOAP_MEC_ALGO)
   {
     case SOAP_MEC_ENV_ENC:
+#if (OPENSSL_VERSION_NUMBER < 0x30000000L)
 #if (OPENSSL_VERSION_NUMBER >= 0x0090800fL)
       ok = EVP_CIPHER_CTX_rand_key(data->ctx, data->ekey);
 #elif defined(EVP_CIPH_RAND_KEY)
-      if (data->ctx->cipher->flags & EVP_CIPH_RAND_KEY)
+      if ((data->ctx->cipher->flags & EVP_CIPH_RAND_KEY))
         ok = EVP_CIPHER_CTX_ctrl(data->ctx, EVP_CTRL_RAND_KEY, 0, data->ekey);
       else
         ok = RAND_bytes(data->ekey, data->ctx->key_len);
@@ -417,6 +433,7 @@ soap_mec_init(struct soap *soap, struct soap_mec_data *data, int alg, SOAP_MEC_K
       *keylen = EVP_PKEY_encrypt_old(key, data->ekey, EVP_CIPHER_CTX_key_length(data->ctx), pkey);
 #else
       *keylen = EVP_PKEY_encrypt(key, data->ekey, EVP_CIPHER_CTX_key_length(data->ctx), pkey);
+#endif
 #endif
       key = data->ekey;
       /* fall through to next arm */
@@ -556,7 +573,7 @@ soap_mec_begin(struct soap *soap, struct soap_mec_data *data, int alg, SOAP_MEC_
   data->taglen = 0;
   /* save the mode flag */
   data->mode = soap->mode;
-  if (alg & SOAP_MEC_ENC)
+  if ((alg & SOAP_MEC_ENC))
   {
     /* clear the IO flags and DOM flag */
     soap->mode &= ~(SOAP_IO | SOAP_IO_LENGTH | SOAP_ENC_ZLIB | SOAP_XML_DOM);
@@ -564,7 +581,7 @@ soap_mec_begin(struct soap *soap, struct soap_mec_data *data, int alg, SOAP_MEC_
     soap_clr_attr(soap);
     /* load the local XML namespaces store */
     soap_set_local_namespaces(soap);
-    if (soap->mode & SOAP_XML_CANONICAL)
+    if ((soap->mode & SOAP_XML_CANONICAL))
       soap->ns = 0; /* for in c14n, we must have all xmlns bindings available */
   }
   else if (soap->ffilterrecv != soap_mec_filterrecv)
@@ -602,9 +619,8 @@ soap_mec_start_alg(struct soap *soap, int alg, const unsigned char *key)
     data->key = key;
   if (alg != SOAP_MEC_NONE)
     data->alg = alg;
-  if (data->alg & SOAP_MEC_ENC)
+  if ((data->alg & SOAP_MEC_ENC))
   {
-    unsigned char iv[EVP_MAX_IV_LENGTH];
     int ivlen;
     if (!data->type)
       return soap_mec_check(soap, data, 0, "soap_mec_start_alg() failed: no cipher");
@@ -617,14 +633,29 @@ soap_mec_start_alg(struct soap *soap, int alg, const unsigned char *key)
     ivlen = EVP_CIPHER_iv_length(data->type);
     if (ivlen)
     {
-      RAND_pseudo_bytes(iv, ivlen);
-      soap_mec_put_base64(soap, data, (unsigned char*)iv, ivlen);
+#if (OPENSSL_VERSION_NUMBER >= 0x30000000L)
+      if (!(data->alg & SOAP_MEC_ENV))
+        RAND_bytes(data->iv, ivlen);
+#elif (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+      RAND_bytes(data->iv, ivlen);
+#else
+      RAND_pseudo_bytes(data->iv, ivlen);
+#endif
+      soap_mec_put_base64(soap, data, (unsigned char*)data->iv, ivlen);
     }
     DBGLOG(TEST, SOAP_MESSAGE(fdebug, "IV = "));
-    DBGHEX(TEST, iv, ivlen);
+    DBGHEX(TEST, data->iv, ivlen);
     DBGLOG(TEST, SOAP_MESSAGE(fdebug, "\n"));
-    ok = EVP_EncryptInit_ex(data->ctx, NULL, NULL, data->key, iv);
+#if (OPENSSL_VERSION_NUMBER >= 0x30000000L)
+    if (!(data->alg & SOAP_MEC_ENV))
+    {
+      ok = EVP_EncryptInit_ex(data->ctx, NULL, NULL, data->key, data->iv);
+      DBGLOG(TEST, SOAP_MESSAGE(fdebug, "EVP_EncryptInit ok=%d\n", ok));
+    }
+#else
+    ok = EVP_EncryptInit_ex(data->ctx, NULL, NULL, data->key, data->iv);
     DBGLOG(TEST, SOAP_MESSAGE(fdebug, "EVP_EncryptInit ok=%d\n", ok));
+#endif
   }
   else
   {
@@ -665,7 +696,7 @@ soap_mec_start_alg(struct soap *soap, int alg, const unsigned char *key)
         data->type = NULL;
     }
     if (!data->type)
-      return soap_mec_check(soap, data, 0, "soap_mec_start_alg() failed: cannot load cipher");
+      return soap_mec_check(soap, data, 0, "soap_mec_start_alg() failed: no cipher");
     len = 2 * sizeof(soap->buf) + EVP_CIPHER_block_size(data->type);
     if (!data->buf || data->buflen < len)
     {
@@ -724,7 +755,7 @@ soap_mec_stop(struct soap *soap)
   if (!data)
     return soap->error = SOAP_USER_ERROR;
   DBGLOG(TEST, SOAP_MESSAGE(fdebug, "MEC Stop alg=0x%x\n", data->alg));
-  if (data->alg & SOAP_MEC_ENC)
+  if ((data->alg & SOAP_MEC_ENC))
   {
     const char *s = NULL;
     size_t n = 0;
@@ -784,8 +815,8 @@ size_t
 SOAP_FMAC2
 soap_mec_size(int alg, SOAP_MEC_KEY_TYPE *pkey)
 {
-  if (alg & SOAP_MEC_ENV)
-    return EVP_PKEY_size(pkey);
+  if ((alg & SOAP_MEC_ENV))
+    return (size_t)EVP_PKEY_size(pkey);
   switch (alg & SOAP_MEC_ALGO & ~SOAP_MEC_GCM)
   {
     case SOAP_MEC_DES_CBC:
@@ -826,7 +857,7 @@ soap_mec_upd(struct soap *soap, struct soap_mec_data *data, const char **s, size
   DBGLOG(TEST, SOAP_MESSAGE(fdebug, "-- MEC Update alg=0x%x n=%lu final=%d (%p) --\n", data->alg, (unsigned long)*n, final, data->ctx));
   DBGMSG(TEST, *s, *n);                                     
   DBGLOG(TEST, SOAP_MESSAGE(fdebug, "\n--\n"));
-  if (data->alg & SOAP_MEC_ENC)
+  if ((data->alg & SOAP_MEC_ENC))
   {
     if (soap_mec_upd_enc(soap, data, s, n, final))
       return soap->error;
@@ -875,7 +906,7 @@ soap_mec_upd_enc(struct soap *soap, struct soap_mec_data *data, const char **s, 
   if (m > (int)data->buflen)
   {
     char *t = data->buf;
-    data->buflen = m; /* + slack? */
+    data->buflen = (size_t)m; /* + slack? */
     data->buf = (char*)SOAP_MALLOC(soap, m);
     if (t)
     {
@@ -886,7 +917,7 @@ soap_mec_upd_enc(struct soap *soap, struct soap_mec_data *data, const char **s, 
   if (!final)
   {
     /* envelope encryption or with shared key? */
-    if (data->alg & SOAP_MEC_ENV)
+    if ((data->alg & SOAP_MEC_ENV))
     {
       ok = EVP_SealUpdate(data->ctx, (unsigned char*)data->buf + data->buflen - k, &m, (unsigned char*)*s, (int)*n);
       DBGHEX(TEST, (unsigned char*)(data->buf + data->buflen - k), m);
@@ -910,7 +941,7 @@ soap_mec_upd_enc(struct soap *soap, struct soap_mec_data *data, const char **s, 
   else
   {
     /* envelope encryption or with shared key? */
-    if (data->alg & SOAP_MEC_ENV)
+    if ((data->alg & SOAP_MEC_ENV))
     {
       ok = EVP_SealFinal(data->ctx, (unsigned char*)data->buf + data->buflen - k, &m);
       DBGHEX(TEST, (unsigned char*)(data->buf + data->buflen - k), m);
@@ -927,7 +958,7 @@ soap_mec_upd_enc(struct soap *soap, struct soap_mec_data *data, const char **s, 
     /* convert to base64 */
     soap_mec_put_base64(soap, data, (unsigned char*)(data->buf + data->buflen - k), m);
 #if (OPENSSL_VERSION_NUMBER >= 0x10002000L)
-    if (data->alg & SOAP_MEC_GCM)
+    if ((data->alg & SOAP_MEC_GCM))
     {
       /* add GCM tag in base64 */
       EVP_CIPHER_CTX_ctrl(data->ctx, EVP_CTRL_GCM_GET_TAG, sizeof(data->tag), data->tag);
@@ -1118,7 +1149,7 @@ soap_mec_upd_dec(struct soap *soap, struct soap_mec_data *data, const char **s, 
           m = k = data->bufidx - EVP_CIPHER_iv_length(data->type);
           (void)soap_memmove((void*)(data->buf + data->buflen - k), m, (const void*)(data->buf + EVP_CIPHER_iv_length(data->type)), m);
 #if (OPENSSL_VERSION_NUMBER >= 0x10002000L)
-          if (data->alg & SOAP_MEC_GCM)
+          if ((data->alg & SOAP_MEC_GCM))
           {
             /* rotate the last 128 bits through tag[] buffer */
             if (m < sizeof(data->tag))
@@ -1169,7 +1200,7 @@ soap_mec_upd_dec(struct soap *soap, struct soap_mec_data *data, const char **s, 
       break;
     case SOAP_MEC_STATE_DECRYPT:
 #if (OPENSSL_VERSION_NUMBER >= 0x10002000L)
-      if (data->alg & SOAP_MEC_GCM)
+      if ((data->alg & SOAP_MEC_GCM))
       {
         /* rotate the last 128 bits through tag[] buffer */
         DBGLOG(TEST, SOAP_MESSAGE(fdebug, "Rotate GCM tag with %lu bytes\n", (unsigned long)data->taglen));
@@ -1214,7 +1245,7 @@ soap_mec_upd_dec(struct soap *soap, struct soap_mec_data *data, const char **s, 
       /* we know there is enough space to flush *s and *n through the buf */
       const char *t = *s;
 #if (OPENSSL_VERSION_NUMBER >= 0x10002000L)
-      if (data->alg & SOAP_MEC_GCM)
+      if ((data->alg & SOAP_MEC_GCM))
       {
         /* use the tag[] buffer */
         EVP_CIPHER_CTX_ctrl(data->ctx, EVP_CTRL_GCM_SET_TAG, sizeof(data->tag), data->tag);
